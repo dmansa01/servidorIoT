@@ -8,7 +8,26 @@ async function startBroker() {
     const MQTT_PORT = process.env.MQTT_PORT || 1883;
     const WS_PORT   = process.env.MQTT_WS_PORT || 8888;
 
+    const MQTT_USER = 'datos';
+    const MQTT_PASS = 'datos@2026';
+
     const aedes = await Aedes.createBroker();
+
+    aedes.authenticate = function (client, username, password, callback) {
+        const user = username ? username.toString() : '';
+        const pass = password ? password.toString() : '';
+
+        if (user === MQTT_USER && pass === MQTT_PASS) {
+            console.log(`[MQTT] Cliente autenticado   → ${client ? client.id : 'desconocido'}`);
+            return callback(null, true);
+        }
+
+        console.log(`[MQTT] Autenticación fallida → ${client ? client.id : 'desconocido'}`);
+        const error = new Error('Bad username or password');
+        error.returnCode = 4;
+        return callback(error, false);
+    };
+
     const mqttServer = net.createServer(aedes.handle);
     const httpServer = http.createServer();
     const wss = new WebSocketServer({ server: httpServer });
